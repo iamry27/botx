@@ -1,112 +1,175 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TeraBox Streamer & Downloader</title>
-  <!-- Telegram WebApp Script -->
+  <title>TeraStream Pro - Video Stream Hub</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Tailwind CSS for modern design -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
+    body {
+      background: radial-gradient(circle at top, #1e1b4b 0%, #0f172a 100%);
+      color: #f8fafc;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
   </style>
 </head>
-<body class="p-4 max-w-md mx-auto min-h-screen flex flex-col justify-between">
+<body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col justify-between select-none">
 
-  <!-- Normal Browser Guard Screen -->
-  <div id="browser-guard" class="hidden fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-6 text-center">
-    <div class="text-6xl mb-4">⚠️</div>
-    <h1 class="text-2xl font-bold mb-2">अक्सेस वर्जित है!</h1>
-    <p class="text-slate-400 mb-6">कृपया इस साइट को केवल टेलीग्राम मिनी ऐप के अंदर ही ओपन करें ताकि आपकी यूजर ID वैरिफ़ाई हो सके।</p>
-    <a href="https://t.me/YOUR_BOT_USERNAME" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">Open Telegram Bot</a>
+  <!-- 🛑 Security Screen: Block standard browser executions -->
+  <div id="browser-guard" class="hidden fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-6 text-center">
+    <div class="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 border border-red-500/30">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+    <h1 class="text-2xl font-bold mb-2 tracking-wide">Access Restricted</h1>
+    <p class="text-slate-400 mb-8 max-w-sm text-sm leading-relaxed">This app utilizes Telegram Mini App parameters for account validation. External web browsers are not supported.</p>
+    <a href="https://t.me/OnlyTerabox_Bot" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3.5 rounded-xl shadow-lg transition-all duration-300">
+       Open in Telegram Bot
+    </a>
   </div>
 
-  <!-- Main Content App -->
-  <div id="app" class="w-full">
-    <!-- Header/User Info -->
-    <div class="flex justify-between items-center bg-slate-800 p-3 rounded-2xl mb-6">
-      <div>
-        <p class="text-sm text-slate-400">स्वागत है,</p>
-        <p id="user-name" class="font-bold text-blue-400">Loading...</p>
+  <!-- 📱 Main Application UI Structure -->
+  <div id="app" class="w-full space-y-5">
+    
+    <!-- Top Identity Navbar -->
+    <div class="flex justify-between items-center bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-blue-600/20 rounded-full flex items-center justify-center text-blue-400 font-bold border border-blue-500/30 text-lg" id="user-avatar">
+          U
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 font-medium">Account Status</p>
+          <p id="user-name" class="font-semibold text-sm max-w-[160px] truncate text-slate-200">Loading...</p>
+        </div>
       </div>
-      <div id="premium-badge" class="px-3 py-1 text-xs font-bold rounded-full bg-slate-700 text-slate-300">
-        Checking...
+      
+      <!-- Account Badge & Hidden Security Node (Dot) -->
+      <div class="flex items-center space-x-2">
+        <div id="premium-badge" class="px-3 py-1.5 text-[10px] font-black tracking-wider rounded-lg bg-slate-800 text-slate-400 border border-slate-700 uppercase">
+          CHECKING...
+        </div>
+        <!-- ⚙️ Hidden Micro Admin Control Dot Toggle Button -->
+        <button onclick="toggleAdminModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 active:scale-95 transition-all">
+          <i class="fa-solid fa-circle-dot text-sm text-slate-800"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Daily Usage Counter -->
-    <div class="bg-slate-800/50 p-3 rounded-xl text-center mb-6 border border-slate-700">
-      <p class="text-sm text-slate-400">आज की आपकी बची हुई फ्री लिमिट</p>
-      <p id="usage-count" class="text-xl font-extrabold text-white mt-1">-/2</p>
+    <!-- Daily Stream Allotment Tracker -->
+    <div class="glass-card p-4 rounded-2xl">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-chart-pie mr-1 text-blue-400"></i> Free Quota Remaining</span>
+        <span id="usage-count" class="text-sm font-bold text-white">-/2 Left</span>
+      </div>
+      <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+        <div id="progress-bar" class="bg-blue-500 h-full w-0 transition-all duration-500"></div>
+      </div>
     </div>
 
-    <!-- Input Box -->
-    <div class="space-y-4">
-      <input type="text" id="terabox-url" placeholder="यहाँ TeraBox लिंक पेस्ट करें..." class="w-full p-4 bg-slate-800 rounded-xl border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm">
-      <button onclick="processLink()" id="btn-play" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-200">
-        Play / Stream Now
+    <!-- Extraction Module Interface -->
+    <div class="glass-card p-4 rounded-2xl space-y-3.5">
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+          <i class="fa-solid fa-link text-sm"></i>
+        </span>
+        <input type="text" id="terabox-url" placeholder="Paste your TeraBox link here..." class="w-full pl-10 pr-4 py-4 bg-slate-950/60 rounded-xl border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm transition-all">
+      </div>
+      <button onclick="processLink()" id="btn-play" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl active:scale-[0.99] transition-all shadow-lg shadow-blue-900/20 text-sm tracking-wide">
+        <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Stream URL
       </button>
     </div>
 
-    <!-- Result / Player Area -->
-    <div id="result-box" class="hidden mt-6 bg-slate-800 p-4 rounded-2xl border border-slate-700 animate-fade-in">
-      <p class="text-xs text-green-400 font-bold mb-1">✓ फ़ाइल मिल गई</p>
-      <h3 id="file-title" class="text-sm font-semibold text-slate-200 mb-3 break-words">File Name</h3>
-      
-      <div class="space-y-2">
-        <a id="stream-link" href="#" target="_blank" class="block text-center w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm">
-          ► Online Player में चलाएं
-        </a>
+    <!-- 🎬 Media Player Canvas Layout (Displays link payload securely without deducting quota) -->
+    <div id="result-box" class="hidden glass-card p-4 rounded-2xl border border-blue-500/20 space-y-4">
+      <div class="relative rounded-xl overflow-hidden aspect-video bg-slate-950 flex items-center justify-center group border border-slate-800">
+        <img id="file-thumb" src="" alt="Thumbnail Preview" class="absolute inset-0 w-full h-full object-cover opacity-40">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+        <div class="relative z-10 text-center p-3">
+          <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider mb-2 inline-block">Stream Manifest Loaded</span>
+          <h3 id="file-title" class="text-xs font-medium text-slate-200 line-clamp-2 max-w-xs drop-shadow-md">Media Asset Title</h3>
+          <p id="file-size" class="text-[11px] text-slate-400 mt-1 font-mono">Size: Calculating...</p>
+        </div>
       </div>
+      
+      <!-- Action execution trigger: Limits are adjusted ONLY when this terminal node fires -->
+      <button onclick="triggerStream()" id="final-stream-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center text-sm shadow-lg shadow-emerald-950/30">
+        <i class="fa-solid fa-play mr-2"></i> Launch Online Player
+      </button>
     </div>
+
   </div>
 
-  <!-- Premium Popup Modal -->
-  <div id="premium-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-    <div class="bg-slate-800 w-full max-w-sm rounded-2xl p-6 border border-yellow-500/30 text-center relative">
-      <div class="text-4xl mb-2">👑</div>
-      <h2 class="text-xl font-bold text-yellow-400 mb-1">प्रीमियम प्लान आवश्यक है</h2>
-      <p class="text-xs text-slate-400 mb-6">आपकी आज की 2 फ्री लिमिट समाप्त हो चुकी है। अनलिमिटेड स्ट्रीमिंग के लिए अपग्रेड करें।</p>
+  <!-- 👑 Premium Tier Threshold Blockage Window -->
+  <div id="premium-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
+    <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-5 border border-amber-500/30 text-center relative">
+      <div class="w-14 h-14 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 border border-amber-500/20">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <h2 class="text-lg font-bold text-amber-400">Limit Reached!</h2>
+      <p class="text-xs text-slate-400 mt-1 mb-5">Your daily allowance of 2 free streaming channels has concluded. Upgrade to lift restrictions.</p>
       
-      <!-- Plan Details -->
-      <div class="bg-slate-900/50 p-4 rounded-xl mb-6 text-left border border-slate-700 space-y-2">
-        <div class="flex justify-between text-sm"><span class="text-slate-400">Weekly Plan:</span><span class="font-bold text-white">₹29</span></div>
-        <div class="flex justify-between text-sm"><span class="text-slate-400">Monthly Plan:</span><span class="font-bold text-white">₹99</span></div>
-        <hr class="border-slate-700 my-1">
-        <div class="text-xs text-center text-blue-400 font-medium">UPI ID: <span class="select-all font-mono text-white">yourupi@ybl</span></div>
+      <!-- Product Packages Definition Table -->
+      <div class="bg-slate-950/60 p-3 rounded-xl mb-5 text-left text-xs space-y-2 border border-slate-800">
+        <div class="flex justify-between"><span class="text-slate-400">Weekly Access:</span><span class="font-bold text-slate-200">₹29</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Monthly VIP Pass:</span><span class="font-bold text-slate-200">₹99</span></div>
+        <hr class="border-slate-800/80 my-1">
+        <div class="text-[11px] text-center text-blue-400">Merchant UPI Address: <span class="select-all font-mono font-bold text-white bg-slate-900 px-1 py-0.5 rounded">yourupi@ybl</span></div>
       </div>
 
       <div class="space-y-2">
-        <a href="https://t.me/YOUR_ADMIN_USERNAME" target="_blank" class="block text-center w-full bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-bold py-3 rounded-xl transition">
-          Admin को स्क्रीनशॉट भेजें
+        <a id="admin-chat-link" href="https://t.me/IAmRy27" target="_blank" class="block text-center w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl transition text-xs tracking-wider">
+          Submit Transaction Receipt
         </a>
-        <button onclick="closeModal()" class="w-full text-sm text-slate-400 hover:text-white py-2">
-          बंद करें
+        <button onclick="closePremiumModal()" class="w-full text-xs text-slate-500 hover:text-slate-400 py-1">
+          Dismiss Window
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Footer Info -->
-  <div class="text-center text-xs text-slate-600 mt-6">
-    Powered by Cloudflare Workers & TG Mini App
+  <!-- ⚙️ Hidden Embedded Master Administrative Panel Override -->
+  <div id="admin-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+    <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-5 border border-slate-800">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-sm text-slate-200"><i class="fa-solid fa-user-shield mr-1.5 text-blue-500"></i> Admin Console</h3>
+        <button onclick="toggleAdminModal()" class="text-slate-500 text-sm">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <input type="password" id="admin-pass" placeholder="Admin Secret Password" class="w-full p-3 bg-slate-950 rounded-lg border border-slate-800 text-white focus:outline-none focus:border-blue-500">
+        <input type="text" id="target-id" placeholder="Target User Telegram ID" class="w-full p-3 bg-slate-950 rounded-lg border border-slate-800 text-white focus:outline-none focus:border-blue-500">
+        
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="setPremiumStatus(true)" class="bg-emerald-600 text-white py-2.5 rounded-lg font-bold">Grant VIP</button>
+          <button onclick="setPremiumStatus(false)" class="bg-red-600 text-white py-2.5 rounded-lg font-bold">Revoke VIP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center text-[10px] text-slate-600 mt-4 tracking-wider uppercase font-medium">
+    Secure Cloud Architecture &copy; 2026
   </div>
 
   <script>
-    // ⚠️ अपने Workers का पूरा URL यहाँ डालें
-    const WORKER_URL = "https://rapid-sound-105d.bollywoodfry01.workers.dev"; 
+    // ⚠️ Configure your live deployment endpoint URL here
+    const WORKER_URL = "https://rapid-sound-105d.bollywoodfry01.workers.dev";
 
     let tg = window.Telegram.WebApp;
     let user_id = null;
     let is_premium_user = false;
+    let activeStreamUrl = "";
 
-    // 1. ब्राउज़र या टेलीग्राम वेरिफिकेशन लॉजिक
     window.onload = function() {
       tg.ready();
-      tg.expand(); // स्क्रीन पूरा बड़ा करें
+      tg.expand();
 
-      // जांचें कि क्या ऐप टेलीग्राम के अंदर खुला है
+      // Enforce Telegram Sandbox environment verification
       if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
         document.getElementById('browser-guard').classList.remove('hidden');
         return;
@@ -114,12 +177,14 @@
 
       const user = tg.initDataUnsafe.user;
       user_id = user.id;
+      
+      document.getElementById('user-avatar').innerText = (user.first_name || 'U').charAt(0).toUpperCase();
       document.getElementById('user-name').innerText = user.first_name + (user.username ? ` (@${user.username})` : '');
       
       fetchUserStatus();
     };
 
-    // 2. यूजर का स्टेटस (प्रीमियम/फ्री काउंट) सर्वर से लाना
+    // Load remote parameters via KV pipeline
     async function fetchUserStatus() {
       try {
         let res = await fetch(`${WORKER_URL}/api/user-status`, {
@@ -130,39 +195,44 @@
         let data = await res.json();
         
         is_premium_user = data.isPremium;
-        
-        // यूज़र इंटरफ़ेस अपडेट करें
         const badge = document.getElementById('premium-badge');
         const counter = document.getElementById('usage-count');
+        const progressBar = document.getElementById('progress-bar');
         
         if(is_premium_user) {
           badge.innerText = "👑 PREMIUM";
-          badge.className = "px-3 py-1 text-xs font-bold rounded-full bg-yellow-500 text-slate-950";
-          counter.innerText = "∞ (अनलिमिटेड)";
-          counter.className = "text-xl font-extrabold text-yellow-400 mt-1";
+          badge.className = "px-2.5 py-1 text-[10px] font-black tracking-wider rounded-md bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950";
+          counter.innerText = "Unlimited Access Granted";
+          progressBar.style.width = "100%";
+          progressBar.className = "bg-amber-400 h-full";
         } else {
-          badge.innerText = "FREE USER";
-          badge.className = "px-3 py-1 text-xs font-bold rounded-full bg-slate-700 text-slate-300";
-          let left = 2 - data.count;
-          counter.innerText = `${left < 0 ? 0 : left} / 2`;
+          badge.innerText = "FREE ACCOUNT";
+          badge.className = "px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-md bg-slate-800 text-slate-400 border border-slate-700";
+          let rem = 2 - data.count;
+          rem = rem < 0 ? 0 : rem;
+          counter.innerText = `${rem} / 2 Streams Remaining`;
+          
+          let pWidth = (rem / 2) * 100;
+          progressBar.style.width = `${pWidth}%`;
+          progressBar.className = rem === 0 ? "bg-red-500 h-full" : "bg-blue-500 h-full";
         }
-      } catch(e) {
-        console.error("Status check error", e);
-      }
+      } catch(e) { console.error("Identity synchronization error:", e); }
     }
 
-    // 3. प्ले बटन दबाने पर एक्शन
+    // Step 1: Request configuration parameters without manipulating balance structures
     async function processLink() {
       const urlInput = document.getElementById('terabox-url').value.trim();
       const btn = document.getElementById('btn-play');
+      const resBox = document.getElementById('result-box');
       
       if(!urlInput) {
-        alert("कृपया कोई टेराबॉक्स लिंक दर्ज करें!");
+        alert("Please specify a valid source URI address.");
         return;
       }
 
+      resBox.classList.add('hidden');
       btn.disabled = true;
-      btn.innerText = "प्रोसेसिंग हो रही है...";
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Unlocking Manifest...`;
 
       try {
         let res = await fetch(`${WORKER_URL}/api/bypass`, {
@@ -173,7 +243,7 @@
         
         let data = await res.json();
         btn.disabled = false;
-        btn.innerText = "Play / Stream Now";
+        btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Stream URL`;
 
         if(data.error === "LIMIT_EXCEEDED") {
           document.getElementById('premium-modal').classList.remove('hidden');
@@ -181,25 +251,95 @@
         }
 
         if(data.found && data.result && data.data && data.data[0]) {
+          // Success: Elements loaded. No allocation limits deducted yet. User remains safe from data faults.
           document.getElementById('file-title').innerText = data.result.file_name;
-          document.getElementById('stream-link').href = data.data[0].stream_url;
-          document.getElementById('result-box').classList.remove('hidden');
+          document.getElementById('file-thumb').src = data.result.thumb_url || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500";
           
-          // स्टेटस दोबारा रीफ्रेश करें ताकि लिमिट काउंट तुरंत दिखे
-          fetchUserStatus();
+          let sizeInMb = (parseInt(data.data[0].size) / (1024 * 1024)).toFixed(2);
+          document.getElementById('file-size').innerText = `Size: ${sizeInMb} MB`;
+          
+          activeStreamUrl = data.data[0].stream_url;
+          resBox.classList.remove('hidden');
         } else {
-          alert("फ़ाइल नहीं मिली या लिंक अमान्य है!");
+          alert("Error: Link parsed empty/invalid or source API faulted. Your account balance remains unaffected.");
         }
-
       } catch (e) {
         btn.disabled = false;
-        btn.innerText = "Play / Stream Now";
-        alert("सर्वर से कनेक्ट करने में त्रुटि आई!");
+        btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Generate Stream URL`;
+        alert("Network Timeout. Connection to extraction matrix interrupted.");
       }
     }
 
-    function closeModal() {
+    // Step 2: Quota state modification occurs ONLY upon player launch validation
+    async function triggerStream() {
+      if(!activeStreamUrl) return;
+
+      const sBtn = document.getElementById('final-stream-btn');
+      sBtn.disabled = true;
+      sBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i> Verifying Allowance...`;
+
+      try {
+        let res = await fetch(`${WORKER_URL}/api/deduct-count`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tg_id: user_id.toString() })
+        });
+        let data = await res.json();
+
+        if(data.error === "LIMIT_EXCEEDED") {
+          sBtn.disabled = false;
+          sBtn.innerHTML = `<i class="fa-solid fa-play mr-2"></i> Launch Online Player`;
+          document.getElementById('result-box').classList.add('hidden');
+          document.getElementById('premium-modal').classList.remove('hidden');
+          return;
+        }
+
+        if(data.success) {
+          await fetchUserStatus(); // Refresh telemetry records
+          sBtn.disabled = false;
+          sBtn.innerHTML = `<i class="fa-solid fa-play mr-2"></i> Launch Online Player`;
+          
+          // Redirect to native video playback routing context
+          window.open(activeStreamUrl, '_blank');
+        }
+      } catch(e) {
+        sBtn.disabled = false;
+        sBtn.innerHTML = `<i class="fa-solid fa-play mr-2"></i> Launch Online Player`;
+        alert("Transaction Error: Authorization logic faulted. Try initializing stream loop again.");
+      }
+    }
+
+    // Interface visibility toggles
+    function toggleAdminModal() {
+      document.getElementById('admin-modal').classList.toggle('hidden');
+    }
+    function closePremiumModal() {
       document.getElementById('premium-modal').classList.add('hidden');
+    }
+
+    // Administrative modification controller functions
+    async function setPremiumStatus(status) {
+      const pass = document.getElementById('admin-pass').value;
+      const tId = document.getElementById('target-id').value.trim();
+
+      if(!pass || !tId) { alert("Incomplete payload. Populate all required credential fields."); return; }
+
+      try {
+        let res = await fetch(`${WORKER_URL}/api/admin/set-premium`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ admin_secret: pass, target_tg_id: tId, make_premium: status })
+        });
+        let data = await res.json();
+
+        if(data.error === "INVALID_CREDENTIALS") {
+          alert("Authentication Rejected. Invalid administration token.");
+        } else if(data.success) {
+          alert(`Success: Profile target state updated for ID: ${tId}`);
+          toggleAdminModal();
+          fetchUserStatus();
+        }
+      } catch(e) { alert("Remote script exception thrown."); }
     }
   </script>
 </body>
