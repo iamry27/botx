@@ -53,7 +53,7 @@
         <div id="premium-badge" class="px-2.5 py-1 text-[9px] font-black tracking-wider rounded-md bg-slate-800 text-slate-500 border border-slate-700">
           WAIT...
         </div>
-        <!-- Secret Dot to Trigger Admin Modal -->
+        <!-- Secret Node Action Indicator to Trigger Admin Modal -->
         <button onclick="toggleAdminModal()" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-800 hover:text-slate-700">
           <i class="fa-solid fa-circle-notch text-xs"></i>
         </button>
@@ -130,7 +130,7 @@
     </div>
   </div>
 
-  <!-- ⚙️ Administrative Engine Terminal -->
+  <!-- ⚙️ Dynamic Administrative Engine Terminal -->
   <div id="admin-panel-overlay" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm z-40 flex items-center justify-center p-4">
     <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-4 border border-slate-800">
       <div class="flex justify-between items-center mb-3">
@@ -162,8 +162,11 @@
   </div>
 
   <script>
-    // ⚠️ Replace with your live workers application base URL
-    const WORKER_URL = "https://your-worker-name.your-subdomain.workers.dev";
+    // ⚠️ अपने Database/User-Status वाले Worker का URL यहाँ डालें
+    const DATABASE_WORKER_URL = "https://rapid-sound-105d.bollywoodfry01.workers.dev";
+    
+    // 🎬 वीडियो लिंक निकालने वाली लाइव API का बेस URL
+    const STREAM_API_URL = "https://lucky-boat-8308.crezybotz.workers.dev";
 
     let tg = window.Telegram.WebApp;
     let user_id = null;
@@ -181,14 +184,15 @@
       const user = tg.initDataUnsafe.user;
       user_id = user.id;
       
+      document.getElementById('user-name').innerText = user.first_name || "Telegram User";
       document.getElementById('avatar-char').innerText = (user.first_name || 'U').charAt(0).toUpperCase();
-      document.getElementById('user-name').innerText = user.first_name + (user.username ? ` (@${user.username})` : '');
       fetchUserStatus();
     };
 
+    // 1. Database Worker: यूज़र का प्रीमियम स्टेटस और लिमिट चेक करने के लिए
     async function fetchUserStatus() {
       try {
-        let res = await fetch(`${WORKER_URL}/api/user-status`, {
+        let res = await fetch(`${DATABASE_WORKER_URL}/api/user-status`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tg_id: user_id.toString(), username: tg.initDataUnsafe.user.username || "Anonymous" })
@@ -225,7 +229,7 @@
       } catch(e) { console.error("Identity core syncing failure:", e); }
     }
 
-    // 🌟 FIXED PIPELINE FUNCTION: Parses your specific object pattern correctly
+    // 2. Main Execution Pipeline: लिमिट कट करेगा + लाइव API से लिंक निकाल कर प्ले करेगा
     async function handleStreamingPipeline() {
       const inputField = document.getElementById('terabox-url');
       const urlInput = inputField.value.trim();
@@ -237,61 +241,59 @@
         return;
       }
 
+      // फ्री यूजर के लिमिट समाप्त होने पर यहीं रोक दें
+      const quotaString = document.getElementById('quota-string').innerText;
+      if (!is_premium_user && quotaString.includes("0 / 2")) {
+        document.getElementById('premium-modal').classList.remove('hidden');
+        return;
+      }
+
       canvas.classList.add('hidden');
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Connecting to Matrix...`;
 
       try {
-        let res = await fetch(`${WORKER_URL}/api/stream-direct`, {
+        // स्टेप ए: आपके डेटाबेस वर्कर में एक टोकन या लिमिट माइनस काउंट अपडेट भेजें
+        await fetch(`${DATABASE_WORKER_URL}/api/consume-token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tg_id: user_id.toString(), target_url: urlInput })
+          body: JSON.stringify({ tg_id: user_id.toString() })
         });
-        
+
+        // स्टेप बी: लाइव टेराबॉक्स क्रैकर API को हिट करें (URL को क्वेरी पैरामीटर में पास करके)
+        let res = await fetch(`${STREAM_API_URL}/?url=${encodeURIComponent(urlInput)}`);
         let data = await res.json();
+        
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-play-pause mr-1"></i> Instant Stream & Play`;
 
-        if(data.error === "LIMIT_EXCEEDED") {
-          document.getElementById('premium-modal').classList.remove('hidden');
-          return;
-        }
-
-        // ✅ FIXED VALIDATION: Perfectly aligned with your JSON data schema
-        if(data && data.found === true && data.result && data.data && Array.isArray(data.data) && data.data.length > 0) {
+        // आपके रिस्पॉन्स स्ट्रक्चर (data.found, data.result.data[0]) के हिसाब से पार्सिंग
+        if(data.found && data.result && data.result.data && data.result.data[0]) {
+          const videoData = data.result.data[0];
           
-          // Inject Title and Poster Frame safely
-          document.getElementById('media-title-node').innerText = data.result.file_name || "Streaming Media Asset";
+          // UI में डेटा भरें
+          document.getElementById('media-title-node').innerText = data.result.file_name || videoData.file_name;
           document.getElementById('media-preview-poster').src = data.result.thumb_url || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500";
           
-          // Calculate and process File Size parameters safely
-          if (data.data[0].size) {
-            let parsedMegabytes = (parseInt(data.data[0].size) / (1024 * 1024)).toFixed(2);
-            document.getElementById('media-size-node').innerText = `Size Details: ${parsedMegabytes} MB`;
-          } else {
-            document.getElementById('media-size-node').innerText = `Size Details: Unknown Size`;
-          }
+          let parsedMegabytes = (parseInt(videoData.size) / (1024 * 1024)).toFixed(2);
+          document.getElementById('media-size-node').innerText = `Size Details: ${parsedMegabytes} MB`;
           
-          // Map stream path key directly to redirect node element
-          if (data.data[0].stream_url) {
-            document.getElementById('external-player-route').href = data.data[0].stream_url;
-            canvas.classList.remove('hidden');
-            
-            // Sync status variables across layout containers
-            fetchUserStatus();
-            
-            // Clear input box
-            inputField.value = "";
-          } else {
-            alert("Error: Stream URL is missing inside data structure.");
-          }
+          // प्ले बटन में सीधा 'stream_url' सेट करें
+          document.getElementById('external-player-route').href = videoData.stream_url;
+          canvas.classList.remove('hidden');
+          
+          // लिमिट काउंटर को लाइव री-सिंक करें
+          fetchUserStatus();
+          
+          // इनपुट बॉक्स साफ करें
+          inputField.value = "";
         } else {
-          alert("Manifest structural mismatch or source API returned 'found: false'. Balance untouched.");
+          alert("Manifest failure: Specified source node is unavailable or formatting is invalid.");
         }
       } catch (e) {
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-play-pause mr-1"></i> Instant Stream & Play`;
-        alert("Communication timeout across worker channels. Please retry parsing link.");
+        alert("Communication timeout across worker channels.");
       }
     }
 
@@ -303,6 +305,7 @@
       document.getElementById('premium-modal').classList.add('hidden');
     }
 
+    // 3. Admin Panel Setup: डेटाबेस में प्लान अपडेट करने के लिए
     async function submitProvisionTransaction() {
       const pass = document.getElementById('admin-pass').value;
       const tId = document.getElementById('target-id').value.trim();
@@ -311,7 +314,7 @@
       if(!pass || !tId) { alert("Execution halted. Credentials missing."); return; }
 
       try {
-        let res = await fetch(`${WORKER_URL}/api/admin/set-premium`, {
+        let res = await fetch(`${DATABASE_WORKER_URL}/api/admin/set-premium`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ admin_secret: pass, target_tg_id: tId, plan_type: selectedPlan })
