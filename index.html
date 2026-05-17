@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeraBox Streamer & Downloader</title>
+  <!-- Telegram WebApp Script -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS for modern design -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
+  </style>
+</head>
+<body class="p-4 max-w-md mx-auto min-h-screen flex flex-col justify-between">
+
+  <!-- Normal Browser Guard Screen -->
+  <div id="browser-guard" class="hidden fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-6 text-center">
+    <div class="text-6xl mb-4">⚠️</div>
+    <h1 class="text-2xl font-bold mb-2">अक्सेस वर्जित है!</h1>
+    <p class="text-slate-400 mb-6">कृपया इस साइट को केवल टेलीग्राम मिनी ऐप के अंदर ही ओपन करें ताकि आपकी यूजर ID वैरिफ़ाई हो सके।</p>
+    <a href="https://t.me/YOUR_BOT_USERNAME" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">Open Telegram Bot</a>
+  </div>
+
+  <!-- Main Content App -->
+  <div id="app" class="w-full">
+    <!-- Header/User Info -->
+    <div class="flex justify-between items-center bg-slate-800 p-3 rounded-2xl mb-6">
+      <div>
+        <p class="text-sm text-slate-400">स्वागत है,</p>
+        <p id="user-name" class="font-bold text-blue-400">Loading...</p>
+      </div>
+      <div id="premium-badge" class="px-3 py-1 text-xs font-bold rounded-full bg-slate-700 text-slate-300">
+        Checking...
+      </div>
+    </div>
+
+    <!-- Daily Usage Counter -->
+    <div class="bg-slate-800/50 p-3 rounded-xl text-center mb-6 border border-slate-700">
+      <p class="text-sm text-slate-400">आज की आपकी बची हुई फ्री लिमिट</p>
+      <p id="usage-count" class="text-xl font-extrabold text-white mt-1">-/2</p>
+    </div>
+
+    <!-- Input Box -->
+    <div class="space-y-4">
+      <input type="text" id="terabox-url" placeholder="यहाँ TeraBox लिंक पेस्ट करें..." class="w-full p-4 bg-slate-800 rounded-xl border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm">
+      <button onclick="processLink()" id="btn-play" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-200">
+        Play / Stream Now
+      </button>
+    </div>
+
+    <!-- Result / Player Area -->
+    <div id="result-box" class="hidden mt-6 bg-slate-800 p-4 rounded-2xl border border-slate-700 animate-fade-in">
+      <p class="text-xs text-green-400 font-bold mb-1">✓ फ़ाइल मिल गई</p>
+      <h3 id="file-title" class="text-sm font-semibold text-slate-200 mb-3 break-words">File Name</h3>
+      
+      <div class="space-y-2">
+        <a id="stream-link" href="#" target="_blank" class="block text-center w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg text-sm">
+          ► Online Player में चलाएं
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Premium Popup Modal -->
+  <div id="premium-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+    <div class="bg-slate-800 w-full max-w-sm rounded-2xl p-6 border border-yellow-500/30 text-center relative">
+      <div class="text-4xl mb-2">👑</div>
+      <h2 class="text-xl font-bold text-yellow-400 mb-1">प्रीमियम प्लान आवश्यक है</h2>
+      <p class="text-xs text-slate-400 mb-6">आपकी आज की 2 फ्री लिमिट समाप्त हो चुकी है। अनलिमिटेड स्ट्रीमिंग के लिए अपग्रेड करें।</p>
+      
+      <!-- Plan Details -->
+      <div class="bg-slate-900/50 p-4 rounded-xl mb-6 text-left border border-slate-700 space-y-2">
+        <div class="flex justify-between text-sm"><span class="text-slate-400">Weekly Plan:</span><span class="font-bold text-white">₹29</span></div>
+        <div class="flex justify-between text-sm"><span class="text-slate-400">Monthly Plan:</span><span class="font-bold text-white">₹99</span></div>
+        <hr class="border-slate-700 my-1">
+        <div class="text-xs text-center text-blue-400 font-medium">UPI ID: <span class="select-all font-mono text-white">yourupi@ybl</span></div>
+      </div>
+
+      <div class="space-y-2">
+        <a href="https://t.me/YOUR_ADMIN_USERNAME" target="_blank" class="block text-center w-full bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-bold py-3 rounded-xl transition">
+          Admin को स्क्रीनशॉट भेजें
+        </a>
+        <button onclick="closeModal()" class="w-full text-sm text-slate-400 hover:text-white py-2">
+          बंद करें
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <div class="text-center text-xs text-slate-600 mt-6">
+    Powered by Cloudflare Workers & TG Mini App
+  </div>
+
+  <script>
+    // ⚠️ अपने Workers का पूरा URL यहाँ डालें
+    const WORKER_URL = "https://rapid-sound-105d.bollywoodfry01.workers.dev"; 
+
+    let tg = window.Telegram.WebApp;
+    let user_id = null;
+    let is_premium_user = false;
+
+    // 1. ब्राउज़र या टेलीग्राम वेरिफिकेशन लॉजिक
+    window.onload = function() {
+      tg.ready();
+      tg.expand(); // स्क्रीन पूरा बड़ा करें
+
+      // जांचें कि क्या ऐप टेलीग्राम के अंदर खुला है
+      if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+        document.getElementById('browser-guard').classList.remove('hidden');
+        return;
+      }
+
+      const user = tg.initDataUnsafe.user;
+      user_id = user.id;
+      document.getElementById('user-name').innerText = user.first_name + (user.username ? ` (@${user.username})` : '');
+      
+      fetchUserStatus();
+    };
+
+    // 2. यूजर का स्टेटस (प्रीमियम/फ्री काउंट) सर्वर से लाना
+    async function fetchUserStatus() {
+      try {
+        let res = await fetch(`${WORKER_URL}/api/user-status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tg_id: user_id.toString(), username: tg.initDataUnsafe.user.username || "NoUser" })
+        });
+        let data = await res.json();
+        
+        is_premium_user = data.isPremium;
+        
+        // यूज़र इंटरफ़ेस अपडेट करें
+        const badge = document.getElementById('premium-badge');
+        const counter = document.getElementById('usage-count');
+        
+        if(is_premium_user) {
+          badge.innerText = "👑 PREMIUM";
+          badge.className = "px-3 py-1 text-xs font-bold rounded-full bg-yellow-500 text-slate-950";
+          counter.innerText = "∞ (अनलिमिटेड)";
+          counter.className = "text-xl font-extrabold text-yellow-400 mt-1";
+        } else {
+          badge.innerText = "FREE USER";
+          badge.className = "px-3 py-1 text-xs font-bold rounded-full bg-slate-700 text-slate-300";
+          let left = 2 - data.count;
+          counter.innerText = `${left < 0 ? 0 : left} / 2`;
+        }
+      } catch(e) {
+        console.error("Status check error", e);
+      }
+    }
+
+    // 3. प्ले बटन दबाने पर एक्शन
+    async function processLink() {
+      const urlInput = document.getElementById('terabox-url').value.trim();
+      const btn = document.getElementById('btn-play');
+      
+      if(!urlInput) {
+        alert("कृपया कोई टेराबॉक्स लिंक दर्ज करें!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "प्रोसेसिंग हो रही है...";
+
+      try {
+        let res = await fetch(`${WORKER_URL}/api/bypass`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tg_id: user_id.toString(), target_url: urlInput })
+        });
+        
+        let data = await res.json();
+        btn.disabled = false;
+        btn.innerText = "Play / Stream Now";
+
+        if(data.error === "LIMIT_EXCEEDED") {
+          document.getElementById('premium-modal').classList.remove('hidden');
+          return;
+        }
+
+        if(data.found && data.result && data.data && data.data[0]) {
+          document.getElementById('file-title').innerText = data.result.file_name;
+          document.getElementById('stream-link').href = data.data[0].stream_url;
+          document.getElementById('result-box').classList.remove('hidden');
+          
+          // स्टेटस दोबारा रीफ्रेश करें ताकि लिमिट काउंट तुरंत दिखे
+          fetchUserStatus();
+        } else {
+          alert("फ़ाइल नहीं मिली या लिंक अमान्य है!");
+        }
+
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerText = "Play / Stream Now";
+        alert("सर्वर से कनेक्ट करने में त्रुटि आई!");
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('premium-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
