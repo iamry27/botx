@@ -29,7 +29,7 @@
     </div>
     <h1 class="text-xl font-bold tracking-wide">Telegram Authentication Required</h1>
     <p class="text-slate-400 mt-2 mb-6 max-w-xs text-xs leading-relaxed">Please load this application inside the official Telegram Mini App environment to access your secure profile stream.</p>
-    <a href="https://t.me/OnlyTerabox_Bot" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-lg transition-all">
+    <a href="https://t.me/YOUR_BOT_USERNAME" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl text-sm shadow-lg transition-all">
        Open Bot Window
     </a>
   </div>
@@ -53,7 +53,7 @@
         <div id="premium-badge" class="px-2.5 py-1 text-[9px] font-black tracking-wider rounded-md bg-slate-800 text-slate-500 border border-slate-700">
           WAIT...
         </div>
-        <!-- Secret Node Action Indicator to Trigger Admin Modal -->
+        <!-- Secret Dot to Trigger Admin Modal -->
         <button onclick="toggleAdminModal()" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-800 hover:text-slate-700">
           <i class="fa-solid fa-circle-notch text-xs"></i>
         </button>
@@ -113,14 +113,14 @@
       <p class="text-xs text-slate-400 mt-1 mb-4">Your account balance has run out of its 2 complimentary daily tokens. Switch to a premium pass for unlimited playback.</p>
       
       <div class="bg-slate-950/80 p-3 rounded-xl mb-4 text-left text-xs space-y-1.5 border border-slate-800">
-        <div class="flex justify-between"><span class="text-slate-400">7-Day Access Pass:</span><span class="font-bold text-slate-200">₹19</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">30-Day VIP Pass:</span><span class="font-bold text-slate-200">₹49</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">7-Day Access Pass:</span><span class="font-bold text-slate-200">₹29</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">30-Day VIP Pass:</span><span class="font-bold text-slate-200">₹99</span></div>
         <hr class="border-slate-800/60 my-1">
-        <div class="text-[10px] text-center text-blue-400">UPI: <span class="select-all font-mono font-bold text-white bg-slate-900 px-1 py-0.5 rounded">ry7261096@oksbi</span></div>
+        <div class="text-[10px] text-center text-blue-400">UPI: <span class="select-all font-mono font-bold text-white bg-slate-900 px-1 py-0.5 rounded">yourupi@ybl</span></div>
       </div>
 
       <div class="space-y-1.5">
-        <a id="admin-chat-link" href="https://t.me/iamry27" target="_blank" class="block text-center w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">
+        <a id="admin-chat-link" href="https://t.me/YOUR_ADMIN_USERNAME" target="_blank" class="block text-center w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">
           Upload Payment Slip
         </a>
         <button onclick="closePaywallModal()" class="w-full text-xs text-slate-500 hover:text-slate-400 py-1">
@@ -130,7 +130,7 @@
     </div>
   </div>
 
-  <!-- ⚙️ Dynamic Administrative Engine Terminal (Expiry Logic Controls Inside) -->
+  <!-- ⚙️ Administrative Engine Terminal -->
   <div id="admin-panel-overlay" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm z-40 flex items-center justify-center p-4">
     <div class="bg-slate-900 w-full max-w-xs rounded-2xl p-4 border border-slate-800">
       <div class="flex justify-between items-center mb-3">
@@ -163,7 +163,7 @@
 
   <script>
     // ⚠️ Replace with your live workers application base URL
-    const WORKER_URL = "https://rapid-sound-105d.bollywoodfry01.workers.dev";
+    const WORKER_URL = "https://your-worker-name.your-subdomain.workers.dev";
 
     let tg = window.Telegram.WebApp;
     let user_id = null;
@@ -182,10 +182,10 @@
       user_id = user.id;
       
       document.getElementById('avatar-char').innerText = (user.first_name || 'U').charAt(0).toUpperCase();
+      document.getElementById('user-name').innerText = user.first_name + (user.username ? ` (@${user.username})` : '');
       fetchUserStatus();
     };
 
-    // Synchronization loop fetching credentials from memory cluster
     async function fetchUserStatus() {
       try {
         let res = await fetch(`${WORKER_URL}/api/user-status`, {
@@ -225,7 +225,7 @@
       } catch(e) { console.error("Identity core syncing failure:", e); }
     }
 
-    // Direct pipeline execution: Checks limits, calls endpoints, updates data and serves video on one click
+    // 🌟 FIXED PIPELINE FUNCTION: Parses your specific object pattern correctly
     async function handleStreamingPipeline() {
       const inputField = document.getElementById('terabox-url');
       const urlInput = inputField.value.trim();
@@ -257,30 +257,41 @@
           return;
         }
 
-        if(data.found && data.result && data.data && data.data[0]) {
-          // Success: Display media layout directly and load link parameters
-          document.getElementById('media-title-node').innerText = data.result.file_name;
+        // ✅ FIXED VALIDATION: Perfectly aligned with your JSON data schema
+        if(data && data.found === true && data.result && data.data && Array.isArray(data.data) && data.data.length > 0) {
+          
+          // Inject Title and Poster Frame safely
+          document.getElementById('media-title-node').innerText = data.result.file_name || "Streaming Media Asset";
           document.getElementById('media-preview-poster').src = data.result.thumb_url || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500";
           
-          let parsedMegabytes = (parseInt(data.data[0].size) / (1024 * 1024)).toFixed(2);
-          document.getElementById('media-size-node').innerText = `Size Details: ${parsedMegabytes} MB`;
+          // Calculate and process File Size parameters safely
+          if (data.data[0].size) {
+            let parsedMegabytes = (parseInt(data.data[0].size) / (1024 * 1024)).toFixed(2);
+            document.getElementById('media-size-node').innerText = `Size Details: ${parsedMegabytes} MB`;
+          } else {
+            document.getElementById('media-size-node').innerText = `Size Details: Unknown Size`;
+          }
           
-          // Inject actual streaming link configuration directly into the player launch token
-          document.getElementById('external-player-route').href = data.data[0].stream_url;
-          canvas.classList.remove('hidden');
-          
-          // Re-fetch telemetry immediately to sync daily token counter visually
-          fetchUserStatus();
-          
-          // Auto clear input to prevent double click confusion
-          inputField.value = "";
+          // Map stream path key directly to redirect node element
+          if (data.data[0].stream_url) {
+            document.getElementById('external-player-route').href = data.data[0].stream_url;
+            canvas.classList.remove('hidden');
+            
+            // Sync status variables across layout containers
+            fetchUserStatus();
+            
+            // Clear input box
+            inputField.value = "";
+          } else {
+            alert("Error: Stream URL is missing inside data structure.");
+          }
         } else {
-          alert("Manifest failure: Specified source node is unavailable or formatting is invalid. Balance untouched.");
+          alert("Manifest structural mismatch or source API returned 'found: false'. Balance untouched.");
         }
       } catch (e) {
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-play-pause mr-1"></i> Instant Stream & Play`;
-        alert("Communication timeout across worker channels.");
+        alert("Communication timeout across worker channels. Please retry parsing link.");
       }
     }
 
@@ -292,7 +303,6 @@
       document.getElementById('premium-modal').classList.add('hidden');
     }
 
-    // Submit administrative request package down to cluster
     async function submitProvisionTransaction() {
       const pass = document.getElementById('admin-pass').value;
       const tId = document.getElementById('target-id').value.trim();
